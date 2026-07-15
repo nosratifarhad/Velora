@@ -6,4 +6,9 @@
     <Project Path="src/Velora.Domain/Velora.Domain.csproj" />
     <Project Path="src/Velora.Infrastructure/Velora.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Velora.ArchitectureTests/Velora.ArchitectureTests.csproj" />
+    <Project Path="tests/Velora.IntegrationTests/Velora.IntegrationTests.csproj" />
+    <Project Path="tests/Velora.UnitTests/Velora.UnitTests.csproj" />
+  </Folder>
 </Solution>
