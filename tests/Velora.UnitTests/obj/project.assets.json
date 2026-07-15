@@ -393,6 +393,26 @@
         "build": {
           "build/net8.0/xunit.runner.visualstudio.props": {}
         }
+      },
+      "Velora.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/Velora.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Velora.Application.dll": {}
+        }
+      },
+      "Velora.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/Velora.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Velora.Domain.dll": {}
+        }
       }
     }
   },
@@ -903,11 +923,23 @@
         "xunit.runner.visualstudio.3.1.4.nupkg.sha512",
         "xunit.runner.visualstudio.nuspec"
       ]
+    },
+    "Velora.Application/1.0.0": {
+      "type": "project",
+      "path": "../../src/Velora.Application/Velora.Application.csproj",
+      "msbuildProject": "../../src/Velora.Application/Velora.Application.csproj"
+    },
+    "Velora.Domain/1.0.0": {
+      "type": "project",
+      "path": "../../src/Velora.Domain/Velora.Domain.csproj",
+      "msbuildProject": "../../src/Velora.Domain/Velora.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Microsoft.NET.Test.Sdk >= 17.14.1",
+      "Velora.Application >= 1.0.0",
+      "Velora.Domain >= 1.0.0",
       "coverlet.collector >= 6.0.4",
       "xunit >= 2.9.3",
       "xunit.runner.visualstudio >= 3.1.4"
@@ -945,7 +977,14 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "D:\\github\\Velora\\src\\Velora.Application\\Velora.Application.csproj": {
+              "projectPath": "D:\\github\\Velora\\src\\Velora.Application\\Velora.Application.csproj"
+            },
+            "D:\\github\\Velora\\src\\Velora.Domain\\Velora.Domain.csproj": {
+              "projectPath": "D:\\github\\Velora\\src\\Velora.Domain\\Velora.Domain.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
