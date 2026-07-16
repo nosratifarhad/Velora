@@ -1,0 +1,159 @@
+variables:
+    PROJECT_NAME: "velora"
+    PROJECT_CSPROJ_PATH: ./src/Velora.Api/Velora.Api.csproj
+    PROJECT_INTEGRATION_TEST_CSPROJ_PATH: ./tests/Velora.IntegrationTests/Velora.IntegrationTests.csproj
+    PROJECT_TEST_CSPROJ_PATH: ./tests/Velora.UnitTests/Velora.UnitTests.csproj
+    PROJECT_SLN_PATH: ./Velora.slnx
+    DOTNET_SDK_IMAGE: mcr.microsoft.com/dotnet/sdk:10.0.100
+
+default:
+    image: $DOTNET_SDK_IMAGE
+
+    tags:
+        - k8s
+
+    cache:
+        key:
+            files:
+                - Velora.slnx
+                - "**/*.csproj"
+
+        paths:
+            - ~/.nuget/packages
+
+    before_script:
+        - echo "Starting CI Pipeline..."
+        - dotnet --version
+        - dotnet --info
+    
+    interruptible: true
+
+    retry:
+        max: 2
+        when:
+            - runner_system_failure
+            - stuck_or_timeout_failure
+
+    timeout: 20m
+
+
+stages:
+  - build
+  - test
+  - integration_test
+  - security
+  - publish
+  - docker
+  - deploy
+
+
+build:
+    stage: build
+    script:
+        - echo "Running build..."
+        - dotnet restore $PROJECT_SLN_PATH
+        - dotnet build $PROJECT_SLN_PATH --no-restore
+    artifacts:
+        paths:
+            - "**/bin/"
+            - "**/obj/"
+        expire_in: 1 day
+
+test:
+    stage: test
+    needs:
+        - build
+    script:
+        - dotnet test $PROJECT_TEST_CSPROJ_PATH 
+          --no-build 
+          --no-restore 
+          --logger:"junit;LogFilePath=test-results.xml"
+          --collect:"XPlat Code Coverage"
+    artifacts:
+        reports:
+            junit: test-results.xml
+            coverage_report:
+                coverage_format: cobertura
+                path: "**/coverage.cobertura.xml"
+
+        paths:
+            - "**/coverage.cobertura.xml"
+
+integration_test:
+    stage: integration_test
+    needs:
+        - build
+    script:
+        - echo "Running integration tests..."
+        - dotnet test $PROJECT_INTEGRATION_TEST_CSPROJ_PATH 
+          --no-build 
+          --no-restore 
+          --logger:"junit;LogFilePath=integration-test-results.xml" 
+          --logger:"console;verbosity=detailed"
+
+    artifacts:
+        reports:
+            junit: integration-test-results.xml
+
+
+sonarqube:
+    stage: security
+    needs:
+        - test
+    script:
+        - echo "Running sonarqube..."
+        - dotnet tool install --global dotnet-sonarscanner
+        - export PATH="$PATH:$HOME/.dotnet/tools"
+
+        - dotnet sonarscanner begin 
+          /k:"velora"
+          /d:sonar.host.url="$SONAR_HOST_URL"
+          /d:sonar.login="$SONAR_TOKEN"
+
+        - dotnet build $PROJECT_SLN_PATH
+
+        - dotnet sonarscanner end
+          /d:sonar.login="$SONAR_TOKEN"
+
+    rules:
+        - if: '$CI_COMMIT_BRANCH == "main"'
+
+
+publish:
+    stage: publish
+    needs:
+        - test
+        - integration_test
+    script:
+        - echo "Publishing application..."
+        - dotnet publish $PROJECT_CSPROJ_PATH -c Release -o publish
+    rules:
+        - if: '$CI_COMMIT_BRANCH == "main"'
+    artifacts:
+        paths:
+        - publish/
+        expire_in: 1 day
+
+
+docker:
+    stage: docker
+    needs:
+        - publish
+    rules:
+        - if: '$CI_COMMIT_BRANCH == "main"'
+    script:
+        - docker build -t velora-api .
+        - docker push velora-api
+
+
+deploy:
+    stage: deploy
+    needs:
+      - docker
+    rules:
+      - if: '$CI_COMMIT_BRANCH == "main"'
+        when: manual
+    script:
+      - echo "Deploying application..."
+      - kubectl apply -f k8s/deployment.yaml
+
